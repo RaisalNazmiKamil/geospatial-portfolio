@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>WebGIS Migas Indonesia — Dark Dashboard</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.33/esri/themes/dark/main.css"/>
+  <script src="https://js.arcgis.com/4.33/"></script>
+
+  <style>
+    :root{
+      --bg:#08100f;
+      --panel:#0d1715;
+      --panel2:#111e1b;
+      --card:#13231f;
+      --line:#223631;
+      --text:#edf7f3;
+      --muted:#8fa7a0;
+      --accent:#37d39a;
+      --accent2:#1ba87a;
+      --warning:#f6c453;
+      --danger:#ff6b63;
+      --blue:#63b3ff;
+      --shadow:0 16px 40px rgba(0,0,0,.36);
+    }
+    *{box-sizing:border-box}
+    html,body,#app{height:100%;margin:0}
+    body{
+      font-family:Inter,Segoe UI,Arial,sans-serif;
+      background:var(--bg);color:var(--text);overflow:hidden
+    }
+    button,input,select{font:inherit}
+    button{color:inherit}
+    #app{display:grid;grid-template-rows:64px 1fr}
+
+    header{
+      display:flex;align-items:center;gap:14px;padding:0 16px;
+      background:linear-gradient(90deg,#0b1714,#0d1d18);
+      border-bottom:1px solid var(--line);z-index:30
+    }
+    .brand-icon{
+      width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--accent2),var(--accent));
+      color:#02140e;font-weight:900;box-shadow:0 8px 24px rgba(55,211,154,.18)
+    }
+    .brand{min-width:0;flex:1}
+    .brand h1{
+      margin:0;font-size:17px;line-height:1.15;font-weight:800;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+    }
+    .brand p{
+      margin:4px 0 0;font-size:11px;color:var(--muted);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+    }
+    .top-actions{display:flex;align-items:center;gap:8px}
+    .status{
+      display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--line);
+      border-radius:999px;background:#0b1513;color:var(--muted);font-size:11px
+    }
+    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--warning)}
+    .status-dot.ok{background:var(--accent)}
+    .status-dot.bad{background:var(--danger)}
+    .header-btn{
+      border:1px solid var(--line);background:#0b1513;border-radius:10px;
+      min-height:38px;padding:0 12px;cursor:pointer
+    }
+    .header-btn:hover{border-color:#3a5c52;background:#12221e}
+    #mobilePanelBtn{display:none}
+
+    .workspace{
+      min-height:0;display:grid;grid-template-columns:390px 1fr;position:relative
+    }
+    aside{
+      min-height:0;background:var(--panel);border-right:1px solid var(--line);
+      display:grid;grid-template-rows:auto auto 1fr;z-index:20
+    }
+    .hero{
+      padding:16px 16px 12px;border-bottom:1px solid var(--line)
+    }
+    .kicker{
+      font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:800
+    }
+    .hero h2{font-size:20px;line-height:1.2;margin:6px 0 5px}
+    .hero .meta{font-size:11px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+    .tabs{
+      display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:10px;border-bottom:1px solid var(--line)
+    }
+    .tab{
+      border:0;background:transparent;color:var(--muted);padding:9px 4px;border-radius:9px;
+      font-size:11px;font-weight:750;cursor:pointer
+    }
+    .tab.active{background:#153128;color:var(--accent)}
+    .panel{display:none;overflow:auto;min-height:0;padding:12px}
+    .panel.active{display:block}
+
+    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+    .metric{
+      border:1px solid var(--line);background:var(--card);border-radius:13px;padding:11px;min-width:0
+    }
+    .metric .label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+    .metric .value{font-size:21px;font-weight:850;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .metric .sub{font-size:10px;color:var(--muted);margin-top:3px}
+
+    .section-title{
+      font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+      margin:13px 2px 8px;font-weight:800
+    }
+    .searchbox{
+      width:100%;border:1px solid var(--line);background:#0b1513;color:var(--text);
+      border-radius:10px;padding:10px 11px;outline:none;margin-bottom:9px
+    }
+    .searchbox:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(55,211,154,.08)}
+    .row-actions{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+    .btn{
+      border:1px solid var(--line);background:#101d1a;color:var(--text);
+      border-radius:9px;padding:8px 10px;font-size:11px;font-weight:750;cursor:pointer
+    }
+    .btn:hover{background:#172a25;border-color:#36594f}
+    .btn.accent{background:var(--accent2);border-color:var(--accent2);color:white}
+    .btn.danger{border-color:#5c302e;color:#ff9f99}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+
+    .layer-list{display:grid;gap:8px}
+    .layer-card{
+      border:1px solid var(--line);border-radius:12px;background:#0f1b18;padding:10px
+    }
+    .layer-top{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:7px;align-items:center}
+    .layer-title{font-size:12px;font-weight:800;line-height:1.2;word-break:break-word}
+    .layer-type{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+    .layer-count{font-size:10px;color:var(--accent);font-weight:800}
+    .layer-tools{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center;margin-top:9px}
+    .layer-tools input[type=range]{width:100%;accent-color:var(--accent)}
+    .mini-btn{
+      border:1px solid var(--line);background:#13231f;border-radius:8px;padding:5px 8px;
+      font-size:10px;cursor:pointer
+    }
+
+    .info-card{
+      border:1px solid var(--line);background:var(--card);border-radius:13px;padding:12px;margin-bottom:9px
+    }
+    .info-card h3{font-size:12px;margin:0 0 9px}
+    .desc{font-size:11px;line-height:1.55;color:#c2d1cc}
+    .kv{display:grid;grid-template-columns:105px minmax(0,1fr);gap:7px 9px;font-size:11px}
+    .kv .k{color:var(--muted)}
+    .kv .v{word-break:break-word}
+    .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+    .tag{font-size:9px;padding:5px 7px;border-radius:999px;background:#153128;color:var(--accent)}
+    .source-link{color:var(--accent);text-decoration:none;font-weight:750}
+    .source-link:hover{text-decoration:underline}
+
+    #legendHost .esri-legend{background:transparent;color:var(--text)}
+    #legendHost .esri-widget__heading{color:var(--text)}
+    #legendHost .esri-legend__service{border-color:var(--line)}
+
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px}
+    select{
+      min-width:0;width:100%;border:1px solid var(--line);background:#0b1513;color:var(--text);
+      border-radius:9px;padding:9px;outline:none
+    }
+    .analysis-msg{font-size:10px;color:var(--muted);line-height:1.5}
+    .bar-chart{display:grid;gap:8px;margin-top:10px}
+    .bar-item{display:grid;grid-template-columns:minmax(90px,1fr) 1.2fr auto;gap:7px;align-items:center}
+    .bar-label{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bar-track{height:8px;border-radius:99px;background:#0a1411;overflow:hidden}
+    .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px}
+    .bar-val{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+    .attr-table{width:100%;border-collapse:collapse;font-size:10px}
+    .attr-table td{border-bottom:1px solid #1c302b;padding:6px 4px;vertical-align:top;word-break:break-word}
+    .attr-table td:first-child{width:42%;color:var(--muted);font-weight:700}
+
+    .map-wrap{position:relative;min-width:0;min-height:0}
+    #viewDiv{position:absolute;inset:0}
+    .map-topbar{
+      position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:10;
+      display:flex;gap:6px;padding:5px;background:rgba(9,18,16,.92);backdrop-filter:blur(8px);
+      border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)
+    }
+    .map-topbar button{
+      border:0;background:transparent;color:var(--muted);padding:8px 10px;border-radius:8px;
+      font-size:10px;font-weight:800;cursor:pointer
+    }
+    .map-topbar button.active,.map-topbar button:hover{background:#173329;color:var(--accent)}
+    .coord{
+      position:absolute;left:12px;bottom:12px;z-index:9;background:rgba(9,18,16,.92);
+      border:1px solid var(--line);border-radius:10px;padding:7px 9px;font-size:10px;color:var(--muted);
+      backdrop-filter:blur(7px)
+    }
+    .toast{
+      position:absolute;right:14px;bottom:14px;z-index:20;background:#0d1c18;border:1px solid var(--line);
+      border-radius:11px;padding:10px 12px;max-width:380px;font-size:11px;color:#c9d8d3;box-shadow:var(--shadow);
+      opacity:0;pointer-events:none;transform:translateY(8px);transition:.2s
+    }
+    .toast.show{opacity:1;transform:none}
+    .loading{
+      position:absolute;inset:0;z-index:40;background:#08100ff2;display:grid;place-items:center;
+      transition:.25s
+    }
+    .loading.hidden{opacity:0;pointer-events:none}
+    .load-card{
+      width:min(420px,calc(100% - 36px));padding:20px;border:1px solid var(--line);
+      border-radius:16px;background:#0d1715;box-shadow:var(--shadow)
+    }
+    .load-card strong{font-size:14px}
+    .progress{height:7px;border-radius:99px;background:#142520;margin-top:13px;overflow:hidden}
+    .progress span{
+      display:block;width:35%;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));
+      animation:move 1.05s infinite ease-in-out
+    }
+    @keyframes move{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+    .fatal{
+      display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+      width:min(520px,calc(100% - 36px));z-index:50;border:1px solid #6a312e;background:#241311;
+      border-radius:15px;padding:18px;box-shadow:var(--shadow)
+    }
+    .fatal.show{display:block}
+    .fatal h3{margin:0 0 7px;color:#ffaaa4}
+
+    .esri-view .esri-ui-corner .esri-component{box-shadow:0 8px 30px rgba(0,0,0,.25)}
+    .esri-widget{background:#0d1815;color:var(--text)}
+    .esri-widget--button{background:#0d1815;color:var(--text)}
+    .esri-widget--button:hover{background:#173329;color:var(--accent)}
+    .esri-input{background:#101d1a;color:var(--text);border-color:var(--line)}
+    .esri-popup__main-container{background:#0f1b18;color:var(--text)}
+    .esri-popup__header-title,.esri-popup__content{color:var(--text)}
+
+    @media(max-width:900px){
+      #mobilePanelBtn{display:block}
+      .workspace{grid-template-columns:1fr}
+      aside{
+        position:absolute;top:0;left:0;bottom:0;width:min(390px,92vw);
+        transform:translateX(-102%);transition:.22s;box-shadow:var(--shadow)
+      }
+      aside.open{transform:none}
+      .status{display:none}
+      .map-topbar{left:auto;right:10px;transform:none;max-width:calc(100% - 20px);overflow:auto}
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="header-btn" id="mobilePanelBtn">☰</button>
+    <div class="brand-icon">MG</div>
+    <div class="brand">
+      <h1 id="headerTitle">Persebaran Infrastruktur Minyak dan Gas Bumi di Indonesia</h1>
+      <p>WebGIS eksplorasi • ArcGIS WebMap a10da4a0da2c4f6fac27403f11c75359</p>
+    </div>
+    <div class="top-actions">
+      <div class="status"><span class="status-dot" id="statusDot"></span><span id="statusText">Memuat data…</span></div>
+      <button class="header-btn" id="fullscreenBtn" title="Fullscreen">⛶</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside id="sidePanel">
+      <div class="hero">
+        <div class="kicker">Energy Infrastructure Intelligence</div>
+        <h2 id="mapTitle">Persebaran Infrastruktur Migas Indonesia</h2>
+        <div class="meta">
+          <span id="ownerText">Owner: —</span>
+          <span>•</span>
+          <span id="viewText">Views: —</span>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="overview">Ringkas</button>
+        <button class="tab" data-tab="layers">Layer</button>
+        <button class="tab" data-tab="legend">Legenda</button>
+        <button class="tab" data-tab="analysis">Analisis</button>
+        <button class="tab" data-tab="info">Info</button>
+      </div>
+
+      <section class="panel active" id="panel-overview">
+        <div class="cards">
+          <div class="metric"><div class="label">Layer aktif</div><div class="value" id="metricLayers">—</div><div class="sub">operasional</div></div>
+          <div class="metric"><div class="label">Feature Layer</div><div class="value" id="metricFeatureLayers">—</div><div class="sub">dapat dianalisis</div></div>
+          <div class="metric"><div class="label">Total fitur*</div><div class="value" id="metricFeatures">—</div><div class="sub">layer ter-query</div></div>
+          <div class="metric"><div class="label">Skala</div><div class="value" id="metricScale" style="font-size:15px">—</div><div class="sub">tampilan saat ini</div></div>
+        </div>
+
+        <div class="info-card">
+          <h3>Tentang peta</h3>
+          <div class="desc" id="descriptionText">Memuat metadata WebMap ArcGIS Online…</div>
+          <div class="tags" id="tagHost"></div>
+        </div>
+
+        <div class="info-card">
+          <h3>Basemap</h3>
+          <div class="row-actions" style="margin:0">
+            <button class="btn accent" data-basemap="dark">Dark</button>
+            <button class="btn" data-basemap="satellite">Satelit</button>
+            <button class="btn" data-basemap="original">Original</button>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>Petunjuk</h3>
+          <div class="desc">
+            Klik simbol infrastruktur atau wilayah pada peta untuk melihat atribut.
+            Gunakan tab <b>Analisis</b> untuk membuat statistik kategori langsung dari Feature Layer.
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-layers">
+        <input class="searchbox" id="layerSearch" placeholder="Cari layer…" />
+        <div class="row-actions">
+          <button class="btn" id="showAll">Tampilkan semua</button>
+          <button class="btn" id="hideAll">Sembunyikan semua</button>
+          <button class="btn accent" id="zoomAll">Zoom semua</button>
+        </div>
+        <div class="section-title"><span id="layerCountLabel">0</span> layer</div>
+        <div class="layer-list" id="layerList"></div>
+      </section>
+
+      <section class="panel" id="panel-legend">
+        <div class="section-title">Legenda WebMap</div>
+        <div id="legendHost"></div>
+      </section>
+
+      <section class="panel" id="panel-analysis">
+        <div class="info-card">
+          <h3>Analisis kategori generik</h3>
+          <div class="desc" style="margin-bottom:9px">
+            Pilih Feature Layer dan field teks. WebGIS akan menghitung frekuensi setiap kategori langsung dari service.
+          </div>
+          <div class="field-row">
+            <select id="analysisLayer"></select>
+            <select id="analysisField"></select>
+          </div>
+          <div class="row-actions">
+            <button class="btn accent" id="runAnalysis">Hitung kategori</button>
+            <button class="btn" id="exportCsv">Unduh CSV area tampilan</button>
+          </div>
+          <div class="analysis-msg" id="analysisMsg">Menunggu pemilihan layer.</div>
+          <div class="bar-chart" id="barChart"></div>
+        </div>
+
+        <div class="info-card">
+          <h3>Fitur terpilih</h3>
+          <div class="desc" id="selectedLabel">Klik objek pada peta.</div>
+          <div id="attributeHost"></div>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-info">
+        <div class="info-card">
+          <h3>Metadata WebMap</h3>
+          <div class="kv" id="metadataHost">
+            <div class="k">WebMap ID</div><div class="v">a10da4a0da2c4f6fac27403f11c75359</div>
+          </div>
+        </div>
+        <div class="info-card">
+          <h3>Sumber utama</h3>
+          <div class="desc">
+            <p><a class="source-link" target="_blank" href="https://www.arcgis.com/apps/mapviewer/index.html?webmap=a10da4a0da2c4f6fac27403f11c75359">Buka WebMap asli ↗</a></p>
+            <p><a class="source-link" target="_blank" href="https://www.arcgis.com/home/item.html?id=89330a6357ed4e01890ab42c626c5f50&sublayer=0#overview">Item sumber 89330… ↗</a></p>
+            <p><a class="source-link" target="_blank" href="https://www.arcgis.com/home/item.html?id=6c547ea32bdd447bbe18d66ac4dc3384&sublayer=0#overview">Item sumber 6c547… ↗</a></p>
+          </div>
+        </div>
+        <div class="info-card">
+          <h3>Koordinat klik terakhir</h3>
+          <div class="kv">
+            <div class="k">Longitude</div><div class="v" id="lonText">—</div>
+            <div class="k">Latitude</div><div class="v" id="latText">—</div>
+            <div class="k">Layer</div><div class="v" id="hitLayerText">—</div>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <main class="map-wrap">
+      <div id="viewDiv"></div>
+
+      <div class="map-topbar">
+        <button id="toolExplore" class="active">Eksplorasi</button>
+        <button id="toolDistance">Ukur jarak</button>
+        <button id="toolArea">Ukur luas</button>
+        <button id="toolClear">Bersihkan</button>
+      </div>
+
+      <div class="coord" id="coordText">Gerakkan pointer di atas peta</div>
+      <div class="toast" id="toast"></div>
+
+      <div class="loading" id="loading">
+        <div class="load-card">
+          <strong>Menyiapkan WebGIS Migas Indonesia</strong>
+          <div class="desc" style="margin-top:5px">Memuat WebMap, Feature Layer, simbologi, popup, dan statistik awal.</div>
+          <div class="progress"><span></span></div>
+        </div>
+      </div>
+
+      <div class="fatal" id="fatal">
+        <h3>WebMap tidak dapat dimuat</h3>
+        <div class="desc" id="fatalMsg">
+          Pastikan koneksi internet aktif dan item WebMap dapat diakses publik.
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+require([
+  "esri/WebMap",
+  "esri/views/MapView",
+  "esri/widgets/Search",
+  "esri/widgets/Home",
+  "esri/widgets/Compass",
+  "esri/widgets/ScaleBar",
+  "esri/widgets/Legend",
+  "esri/widgets/Expand",
+  "esri/widgets/BasemapGallery",
+  "esri/widgets/Measurement",
+  "esri/Basemap",
+  "esri/portal/PortalItem"
+], function(
+  WebMap, MapView, Search, Home, Compass, ScaleBar, Legend, Expand,
+  BasemapGallery, Measurement, Basemap, PortalItem
+){
+  const WEBMAP_ID = "a10da4a0da2c4f6fac27403f11c75359";
+  const webmap = new WebMap({ portalItem:{ id: WEBMAP_ID } });
+
+  const view = new MapView({
+    container:"viewDiv",
+    map:webmap,
+    popup:{ dockEnabled:true, dockOptions:{ position:"bottom-right", buttonEnabled:false } },
+    constraints:{ snapToZoom:false }
+  });
+
+  const $ = (id)=>document.getElementById(id);
+  const nf = new Intl.NumberFormat("id-ID");
+  const esc = (v)=>String(v ?? "").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+  let flatLayers = [];
+  let featureLayers = [];
+  let totalFeatureCount = 0;
+  let originalBasemap = null;
+  let highlightHandle = null;
+  let measurement = null;
+  let toastTimer = null;
+
+  function showToast(msg){
+    const t=$("toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),3200);
+  }
+
+  function setStatus(text, state){
+    $("statusText").textContent=text;
+    $("statusDot").className="status-dot " + (state || "");
+  }
+
+  function switchTab(name){
+    document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id==="panel-"+name));
+  }
+
+  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
+  $("mobilePanelBtn").addEventListener("click",()=>$("sidePanel").classList.toggle("open"));
+  $("fullscreenBtn").addEventListener("click",async()=>{
+    try{
+      if(!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      else await document.exitFullscreen();
+    }catch(e){ showToast("Browser tidak mengizinkan fullscreen."); }
+  });
+
+  function flatten(collection, depth=0, out=[]){
+    if(!collection) return out;
+    collection.forEach(layer=>{
+      out.push({layer,depth});
+      if(layer.layers) flatten(layer.layers,depth+1,out);
+    });
+    return out;
+  }
+
+  async function safeCount(layer){
+    try{
+      if(layer.type==="feature"){
+        await layer.load();
+        return await layer.queryFeatureCount({where:"1=1"});
+      }
+    }catch(e){}
+    return null;
+  }
+
+  function prettyType(t){
+    const m={"feature":"Feature Layer","map-image":"Map Image","graphics":"Graphics","geojson":"GeoJSON",
+      "tile":"Tile","vector-tile":"Vector Tile","group":"Group","imagery":"Imagery","wms":"WMS"};
+    return m[t] || t || "Layer";
+  }
+
+  async function renderLayerList(){
+    flatLayers=flatten(webmap.layers);
+    featureLayers=flatLayers.map(x=>x.layer).filter(l=>l.type==="feature");
+    $("metricLayers").textContent=flatLayers.length;
+    $("metricFeatureLayers").textContent=featureLayers.length;
+    $("layerCountLabel").textContent=flatLayers.length;
+
+    const host=$("layerList"); host.innerHTML="";
+    totalFeatureCount=0;
+
+    flatLayers.forEach(({layer,depth})=>{
+      const card=document.createElement("div");
+      card.className="layer-card";
+      card.dataset.search=(layer.title||"").toLowerCase();
+      card.style.marginLeft=Math.min(depth*10,25)+"px";
+      card.innerHTML=`
+        <div class="layer-top">
+          <input class="vis" type="checkbox" ${layer.visible!==false?"checked":""} aria-label="Visibilitas">
+          <div>
+            <div class="layer-title">${esc(layer.title||"Tanpa nama")}</div>
+            <div class="layer-type">${esc(prettyType(layer.type))}</div>
+          </div>
+          <div class="layer-count">…</div>
+        </div>
+        <div class="layer-tools">
+          <input class="opacity" type="range" min="0" max="1" step="0.05" value="${Number.isFinite(layer.opacity)?layer.opacity:1}">
+          <button class="mini-btn zoom">Zoom</button>
+        </div>`;
+      host.appendChild(card);
+
+      card.querySelector(".vis").addEventListener("change",e=>layer.visible=e.target.checked);
+      card.querySelector(".opacity").addEventListener("input",e=>layer.opacity=Number(e.target.value));
+      card.querySelector(".zoom").addEventListener("click",async()=>{
+        try{
+          await layer.load();
+          if(layer.fullExtent) await view.goTo(layer.fullExtent.expand ? layer.fullExtent.expand(1.08):layer.fullExtent);
+        }catch(e){showToast("Extent layer tidak tersedia.");}
+      });
+
+      safeCount(layer).then(n=>{
+        const node=card.querySelector(".layer-count");
+        if(n===null){node.textContent="";return;}
+        node.textContent=nf.format(n);
+        totalFeatureCount+=n;
+        $("metricFeatures").textContent=nf.format(totalFeatureCount);
+      });
+    });
+
+    $("analysisLayer").innerHTML=featureLayers.map((l,i)=>`<option value="${i}">${esc(l.title)}</option>`).join("");
+    refreshAnalysisFields();
+  }
+
+  $("layerSearch").addEventListener("input",()=>{
+    const q=$("layerSearch").value.trim().toLowerCase();
+    $("layerList").querySelectorAll(".layer-card").forEach(c=>c.style.display=!q||c.dataset.search.includes(q)?"":"none");
+  });
+  $("showAll").addEventListener("click",()=>{
+    flatLayers.forEach(x=>x.layer.visible=true);
+    document.querySelectorAll(".vis").forEach(x=>x.checked=true);
+  });
+  $("hideAll").addEventListener("click",()=>{
+    flatLayers.forEach(x=>x.layer.visible=false);
+    document.querySelectorAll(".vis").forEach(x=>x.checked=false);
+  });
+  $("zoomAll").addEventListener("click",async()=>{
+    try{
+      const ext=flatLayers.map(x=>x.layer.fullExtent).filter(Boolean);
+      if(!ext.length)return;
+      let u=ext[0].clone();
+      for(let i=1;i<ext.length;i++) u=u.union(ext[i]);
+      await view.goTo(u.expand(1.03));
+    }catch(e){showToast("Tidak dapat menghitung extent gabungan.");}
+  });
+
+  function refreshAnalysisFields(){
+    const idx=Number($("analysisLayer").value||0);
+    const layer=featureLayers[idx];
+    if(!layer){$("analysisField").innerHTML="";return;}
+    layer.load().then(()=>{
+      const fields=layer.fields.filter(f=>["string","small-integer","integer"].includes(f.type));
+      $("analysisField").innerHTML=fields.map(f=>`<option value="${esc(f.name)}">${esc(f.alias||f.name)}</option>`).join("");
+      $("analysisMsg").textContent=fields.length ? "Pilih field lalu klik Hitung kategori." : "Tidak ada field kategori yang cocok.";
+    }).catch(()=>$("analysisMsg").textContent="Field layer gagal dibaca.");
+  }
+  $("analysisLayer").addEventListener("change",refreshAnalysisFields);
+
+  $("runAnalysis").addEventListener("click",async()=>{
+    const layer=featureLayers[Number($("analysisLayer").value||0)];
+    const field=$("analysisField").value;
+    const host=$("barChart");
+    if(!layer||!field)return;
+    host.innerHTML="";
+    $("analysisMsg").textContent="Menghitung statistik dari server…";
+    try{
+      const oid=layer.objectIdField || layer.fields.find(f=>f.type==="oid")?.name;
+      const q=layer.createQuery();
+      q.where="1=1";
+      q.returnGeometry=false;
+      q.groupByFieldsForStatistics=[field];
+      q.outStatistics=[{
+        statisticType:"count",
+        onStatisticField:oid || field,
+        outStatisticFieldName:"jumlah"
+      }];
+      const res=await layer.queryFeatures(q);
+      let rows=res.features.map(f=>({
+        label:f.attributes[field]===null||f.attributes[field]===undefined?"(Kosong)":String(f.attributes[field]),
+        n:Number(f.attributes.jumlah||0)
+      }));
+      rows.sort((a,b)=>b.n-a.n);
+      rows=rows.slice(0,12);
+      const max=Math.max(...rows.map(r=>r.n),1);
+      host.innerHTML=rows.map(r=>`
+        <div class="bar-item" title="${esc(r.label)}">
+          <div class="bar-label">${esc(r.label)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.max(2,r.n/max*100)}%"></div></div>
+          <div class="bar-val">${nf.format(r.n)}</div>
+        </div>`).join("");
+      $("analysisMsg").textContent=`Top ${rows.length} kategori • ${layer.title}`;
+    }catch(e){
+      console.error(e);
+      $("analysisMsg").textContent="Statistik tidak didukung service ini atau field tidak dapat dikelompokkan.";
+    }
+  });
+
+  $("exportCsv").addEventListener("click",async()=>{
+    const layer=featureLayers[Number($("analysisLayer").value||0)];
+    if(!layer)return;
+    $("analysisMsg").textContent="Mengambil fitur pada extent tampilan…";
+    try{
+      const q=layer.createQuery();
+      q.geometry=view.extent;
+      q.spatialRelationship="intersects";
+      q.outFields=["*"];
+      q.returnGeometry=false;
+      q.num=5000;
+      const res=await layer.queryFeatures(q);
+      if(!res.features.length){$("analysisMsg").textContent="Tidak ada fitur pada extent tampilan.";return;}
+      const fields=Object.keys(res.features[0].attributes);
+      const csv=[fields.join(",")];
+      res.features.forEach(f=>{
+        csv.push(fields.map(k=>{
+          const v=f.attributes[k] ?? "";
+          const s=String(v).replace(/"/g,'""');
+          return `"${s}"`;
+        }).join(","));
+      });
+      const blob=new Blob(["\ufeff"+csv.join("\n")],{type:"text/csv;charset=utf-8"});
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download=(layer.title||"layer").replace(/[^\w-]+/g,"_")+"_extent.csv";
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      $("analysisMsg").textContent=`CSV dibuat: ${nf.format(res.features.length)} fitur (maks. 5.000).`;
+    }catch(e){
+      console.error(e);
+      $("analysisMsg").textContent="Export gagal. Service mungkin membatasi query.";
+    }
+  });
+
+  function renderAttributes(graphic){
+    const host=$("attributeHost");
+    if(!graphic){
+      $("selectedLabel").textContent="Tidak ada fitur terpilih.";
+      host.innerHTML="";
+      return;
+    }
+    const attrs=graphic.attributes||{};
+    $("selectedLabel").innerHTML=`<b>${esc(graphic.layer?.title||"Fitur")}</b>`;
+    $("hitLayerText").textContent=graphic.layer?.title||"—";
+    host.innerHTML=`<table class="attr-table">${
+      Object.entries(attrs)
+        .filter(([,v])=>v!==null&&v!==undefined&&String(v)!=="")
+        .slice(0,70)
+        .map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")
+    }</table>`;
+  }
+
+  view.on("click",async(event)=>{
+    const p=view.toMap({x:event.x,y:event.y});
+    if(p){
+      $("lonText").textContent=p.longitude?.toFixed(6) ?? "—";
+      $("latText").textContent=p.latitude?.toFixed(6) ?? "—";
+    }
+    try{
+      const hit=await view.hitTest(event);
+      const r=hit.results.find(x=>x.graphic && x.graphic.layer && x.graphic.layer.type!=="graphics");
+      if(!r){renderAttributes(null);return;}
+      renderAttributes(r.graphic);
+      switchTab("analysis");
+      if(highlightHandle){highlightHandle.remove();highlightHandle=null;}
+      try{
+        const lv=await view.whenLayerView(r.graphic.layer);
+        highlightHandle=lv.highlight(r.graphic);
+      }catch(e){}
+    }catch(e){}
+  });
+
+  view.on("pointer-move",event=>{
+    const p=view.toMap({x:event.x,y:event.y});
+    if(!p)return;
+    const lon=p.longitude!==undefined?p.longitude.toFixed(5):"—";
+    const lat=p.latitude!==undefined?p.latitude.toFixed(5):"—";
+    $("coordText").textContent=`Lon ${lon} • Lat ${lat} • 1:${nf.format(Math.round(view.scale||0))}`;
+  });
+
+  function setMeasure(mode){
+    ["toolExplore","toolDistance","toolArea"].forEach(id=>$(id).classList.remove("active"));
+    if(measurement){
+      view.ui.remove(measurement);
+      measurement.destroy();
+      measurement=null;
+    }
+    if(mode==="explore"){$("toolExplore").classList.add("active");return;}
+    measurement=new Measurement({view:view,activeTool:mode});
+    view.ui.add(measurement,"bottom-right");
+    $(mode==="distance"?"toolDistance":"toolArea").classList.add("active");
+  }
+  $("toolExplore").addEventListener("click",()=>setMeasure("explore"));
+  $("toolDistance").addEventListener("click",()=>setMeasure("distance"));
+  $("toolArea").addEventListener("click",()=>setMeasure("area"));
+  $("toolClear").addEventListener("click",()=>{
+    if(measurement)measurement.clear();
+    if(highlightHandle){highlightHandle.remove();highlightHandle=null;}
+    renderAttributes(null);
+  });
+
+  document.querySelectorAll("[data-basemap]").forEach(btn=>btn.addEventListener("click",()=>{
+    document.querySelectorAll("[data-basemap]").forEach(x=>x.classList.remove("accent"));
+    btn.classList.add("accent");
+    const mode=btn.dataset.basemap;
+    try{
+      if(mode==="original" && originalBasemap) webmap.basemap=originalBasemap;
+      if(mode==="dark") webmap.basemap=Basemap.fromId("dark-gray-vector");
+      if(mode==="satellite") webmap.basemap=Basemap.fromId("satellite");
+    }catch(e){showToast("Basemap tidak dapat diganti.");}
+  }));
+
+  view.when(async()=>{
+    try{
+      await webmap.loadAll();
+      originalBasemap=webmap.basemap?.clone ? webmap.basemap.clone() : webmap.basemap;
+
+      // Tema gelap sebagai default, sesuai permintaan.
+      try{ webmap.basemap=Basemap.fromId("dark-gray-vector"); }catch(e){}
+
+      const search=new Search({view});
+      const home=new Home({view});
+      const compass=new Compass({view});
+      const scaleBar=new ScaleBar({view,unit:"metric"});
+      const legend=new Legend({view,container:"legendHost"});
+      const basemapGallery=new BasemapGallery({view});
+      const bgExpand=new Expand({view,content:basemapGallery,expandTooltip:"Basemap gallery"});
+
+      view.ui.add(search,"top-right");
+      view.ui.add(home,"top-left");
+      view.ui.add(compass,"top-left");
+      view.ui.add(bgExpand,"top-left");
+      view.ui.add(scaleBar,"bottom-right");
+
+      await renderLayerList();
+
+      view.watch("scale",s=>{
+        $("metricScale").textContent="1:"+nf.format(Math.round(s||0));
+      });
+
+      // Metadata utama WebMap. Kegagalan metadata tidak membatalkan peta.
+      try{
+        const item=webmap.portalItem;
+        await item.load();
+        $("headerTitle").textContent=item.title || $("headerTitle").textContent;
+        $("mapTitle").textContent=item.title || $("mapTitle").textContent;
+        $("ownerText").textContent="Owner: "+(item.owner||"—");
+        $("viewText").textContent="Views: "+nf.format(item.numViews||0);
+        $("descriptionText").textContent=
+          item.snippet || (item.description ? item.description.replace(/<[^>]+>/g," ") : "WebMap infrastruktur minyak dan gas bumi di Indonesia.");
+        $("tagHost").innerHTML=(item.tags||[]).slice(0,12).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
+        const created=item.created?new Date(item.created).toLocaleString("id-ID"):"—";
+        const modified=item.modified?new Date(item.modified).toLocaleString("id-ID"):"—";
+        $("metadataHost").innerHTML=`
+          <div class="k">WebMap ID</div><div class="v">${WEBMAP_ID}</div>
+          <div class="k">Owner</div><div class="v">${esc(item.owner||"—")}</div>
+          <div class="k">Dibuat</div><div class="v">${created}</div>
+          <div class="k">Diubah</div><div class="v">${modified}</div>
+          <div class="k">Views</div><div class="v">${nf.format(item.numViews||0)}</div>
+          <div class="k">Akses</div><div class="v">${esc(item.access||"—")}</div>`;
+      }catch(metaErr){ console.warn("Metadata item:",metaErr); }
+
+      $("loading").classList.add("hidden");
+      setStatus("WebMap aktif","ok");
+
+      if(location.protocol==="file:"){
+        showToast("WebGIS dibuka melalui file://. Jika ada layer yang gagal, jalankan lewat localhost.");
+      }
+    }catch(err){
+      console.error(err);
+      $("loading").classList.add("hidden");
+      $("fatal").classList.add("show");
+      $("fatalMsg").textContent=
+        "MapView terbuka tetapi satu atau lebih sumber utama gagal dimuat. Coba jalankan HTML melalui localhost atau pastikan WebMap/Feature Layer bersifat publik.";
+      setStatus("Ada sumber gagal","bad");
+    }
+  },err=>{
+    console.error(err);
+    $("loading").classList.add("hidden");
+    $("fatal").classList.add("show");
+    $("fatalMsg").textContent=
+      "MapView utama gagal dibuat. Pastikan koneksi internet aktif dan WebMap ArcGIS dapat diakses tanpa autentikasi tambahan.";
+    setStatus("Gagal memuat","bad");
+  });
+});
+</script>
+</body>
+</html>
